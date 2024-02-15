@@ -26,29 +26,9 @@ app.get("/bestRates", async function (req,res){
     }
 })
 
-async function getRatesArray(sellTokenArray, buyTokenArray, sellAmountArray){
-  try {
-    if (!(sellTokenArray.length === buyTokenArray.length && sellTokenArray.length === sellAmountArray.length)) {
-      throw new Error("Input arrays must have the same length.");
-    }
-    let rateResults = [];
-
-    for (let i = 0; i < sellTokenArray.length; i++) {
-      let rateResult = await getSwapData(sellTokenArray[i], buyTokenArray[i], sellAmountArray[i]);
-      if(rateResult !== null) {
-        rateResults.push(rateResult);
-      } else {
-        console.log(`Failed to get swap data for pair index ${i}`);
-        rateResults.push(null);
-      }
-    }
-    
-    return rateResults;
-  } catch (e) {
-    console.error("An error occurred in getRatesArray:", e);
-  }
+async function getRatesArray(sellTokenArray,buyTokenArray,sellAmountArray){
+  
 }
-
 
 async function getSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
     const zeroExData = await getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount);
