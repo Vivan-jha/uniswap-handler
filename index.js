@@ -150,31 +150,6 @@ async function getOneInchSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmou
     console.log("0x Error",e);
 }
 }
-
-async function getParaSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
-  try{
-    const params = {
-      srcToken: sellTokenAddress,
-      destToken: buyTokenAddress,
-      amount: sellTokenAmount,
-      from: "0xbEbEbEb035351f58602E0C1C8B59ECBfF5d5f47b",
-      network:56,
-      side:SELL
-      }
-      const response = await axios.get(
-        `https://apiv5.paraswap.io/prices/?${qs.stringify(params)}`
-        // {
-        //   headers: {
-        //     'Authorization': `Bearer ${process.env.ONEINCH_API_KEY}`,
-        //   },
-        // }
-      )
-      return(response.data);
-}catch(e){
-    console.log("Paraswap Error",e);
-}
-}
-
 var server = app.listen(2000, function () {
     var host = server.address().address;
     var port = server.address().port;
