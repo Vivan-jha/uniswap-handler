@@ -150,6 +150,71 @@ async function getOneInchSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmou
     console.log("0x Error",e);
 }
 }
+async function getParaSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
+  try{
+    const params = {
+      srcToken: sellTokenAddress,
+      destToken: buyTokenAddress,
+      amount: sellTokenAmount,
+      network:56,
+      srcDecimals:18,
+      destDecimals:6,
+      side:'SELL'
+      }
+      const response = await axios.get(
+        `https://apiv5.paraswap.io/prices/?${qs.stringify(params)}`
+      )
+      return(response.data);
+ }catch(e){
+    console.log("Paraswap Error",e);
+ }
+ }
+ 
+ 
+ async function buildParaSwapTransaction({
+  network,
+  userAddress,
+  priceRoute,
+  srcToken,
+  destToken,
+  srcAmount,
+  destAmount,
+  slippage,
+  gasPrice,
+  eip1559,
+  ignoreChecks,
+  ignoreGasEstimate,
+ }) {
+  const transactionParams = {
+    network,
+    userAddress,
+    priceRoute,
+    srcToken,
+    destToken,
+    srcAmount,
+    destAmount,
+    slippage,
+    gasPrice,
+    eip1559,
+    ignoreChecks,
+    ignoreGasEstimate,
+  };
+ 
+ 
+  try {
+    const txResponse = await axios.post(
+      `https://apiv5.paraswap.io/transactions/${network}`,
+      transactionParams
+    );
+    return txResponse.data;
+  } catch (error) {
+    console.error('Transaction Build Error:', error);
+    throw error;
+  }
+ }
+ 
+ 
+
 var server = app.listen(2000, function () {
     var host = server.address().address;
     var port = server.address().port;
