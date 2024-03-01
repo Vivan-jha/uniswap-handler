@@ -7,14 +7,25 @@ require('dotenv').config()
 const qs = require("qs");
 
 const erc20abi = require('./abi/ERC20.json');
+const TOKEN_CONTRACT_ADDRESS = '0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c'; 
+const ZEROEX_ROUTER_ADDRESS = '0xDef1C0ded9bec7F1a1670819833240f027b25EfF'; 
+const ONEINCH_ROUTER_ADDRESS = '0x1111111254fb6c44bac0bed2854e76f90643097d';
+const PARASWAP_TRANSFER_HELPER_ADDRESS = '0x55A0E3b6579972055fAA983482acEb4B251dcF15'; 
+
 
 const provider = new ethers.providers.JsonRpcProvider(
-  "https://eth.llamarpc.com",
-    {
-      name: "eth",
-      chainId: 1,
-    }
-  );
+  "https://binance.llamarpc.com",
+  {
+    name: "bsc",
+    chainId: 56,
+  }
+);
+
+const privateKey = 'bf104dcce9d28bc2280701749d2d7dd184ad49695b8b9f38e1e924ec8482640c';
+const wallet = new ethers.Wallet(privateKey, provider); 
+const signer = wallet.provider.getSigner(wallet.address);
+
+
 
 app.get("/bestRates", async function (req,res){
     try{
@@ -49,6 +60,23 @@ async function getRatesArray(sellTokenArray, buyTokenArray, sellAmountArray){
   }
 }
 
+async function approveToken(contractAddress, spender, amount) {
+  try {
+    const tokenContract = new ethers.Contract(contractAddress, erc20abi.abi, signer);
+
+
+    const calldata = tokenContract.interface.encodeFunctionData("approve", [spender, amount]);
+    return calldata;
+  } catch (error) {
+    console.error("Approval Error:", error);
+    throw error;
+  }
+}
+
+function delay(ms) {
+  return new Promise( resolve => setTimeout(resolve, ms) );
+}
+
 
 async function getSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
     const zeroExData = await getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount);
@@ -59,11 +87,12 @@ async function getSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
         console.log("Error in fetching rates on both 0x and 1inch");
         return null;
       }else{
+        let approvaldata=approveToken(sellTokenAddress,ONEINCH_ROUTER_ADDRESS,sellTokenAmount);
         let temp = {
           sellTokenAddress: oneInchData.tx.from,
           buyTokenAddress: oneInchData.tx.to,
           sellTokenAmount: oneInchData.toAmount,
-          calldata: oneInchData.tx.data,
+          calldata: [approvaldata,oneInchData.tx.data],
           protocol: "1Inch"
         }
         return(temp);
@@ -73,31 +102,34 @@ async function getSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
         console.log("Error in fetching rates on both 0x and 1inch");
         return null;
       }else{
+        approvaldata=approveToken(sellTokenAddress,ZEROEX_ROUTER_ADDRESS,sellTokenAmount);
         let temp = {
           sellTokenAddress: zeroExData.sellTokenAddress,
           buyTokenAddress: zeroExData.buyTokenAddress,
           sellTokenAmount: zeroExData.grossBuyAmount,
-          calldata: zeroExData.data,
+          calldata: [approvaldata,zeroExData.data],
           protocol: "ZeroEx"
         }
         return(temp);
       }
     }else{
       if(zeroExData.grossBuyAmount >= oneInchData.tx.toAmount){
+        approvaldata=approveToken(sellTokenAddress,ZEROEX_ROUTER_ADDRESS,sellTokenAmount);
         let temp = {
           sellTokenAddress: zeroExData.sellTokenAddress,
           buyTokenAddress: zeroExData.buyTokenAddress,
           sellTokenAmount: zeroExData.grossBuyAmount,
-          calldata: zeroExData.data,
+          calldata:[approvaldata,zeroExData.data],
           protocol: "ZeroEx"
         }
         return(temp);
       }else{
+        let approvaldata=approveToken(sellTokenAddress,ONEINCH_ROUTER_ADDRESS,sellTokenAmount);
         let temp = {
           sellTokenAddress: oneInchData.tx.from,
           buyTokenAddress: oneInchData.tx.to,
           sellTokenAmount: oneInchData.toAmount,
-          calldata: oneInchData.tx.data,
+          calldata: [approvaldata,oneInchData.tx.data],
           protocol: "1Inch"
         }
         return(temp);
@@ -128,6 +160,7 @@ async function getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmoun
 }
 async function getOneInchSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
   try{
+    await delay(1000);
     const params = {
       src: sellTokenAddress,
       dst: buyTokenAddress,
@@ -212,10 +245,12 @@ async function getParaSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount)
     throw error;
   }
  }
+
+
  
  
 
-var server = app.listen(2000, function () {
+var server = app.listen(3000, function () {
     var host = server.address().address;
     var port = server.address().port;
   
