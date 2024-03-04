@@ -78,64 +78,88 @@ function delay(ms) {
 }
 
 
-async function getSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
-    const zeroExData = await getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount);
-    const oneInchData = await getOneInchSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount);
+// async function getSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
+//     const zeroExData = await getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount);
+//     const oneInchData = await getOneInchSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount);
 
-    if(zeroExData.grossBuyAmount == null){
-      if(oneInchData.toAmount == null){
-        console.log("Error in fetching rates on both 0x and 1inch");
-        return null;
-      }else{
-        let approvaldata=approveToken(sellTokenAddress,ONEINCH_ROUTER_ADDRESS,sellTokenAmount);
-        let temp = {
-          sellTokenAddress: oneInchData.tx.from,
-          buyTokenAddress: oneInchData.tx.to,
-          sellTokenAmount: oneInchData.toAmount,
-          calldata: [approvaldata,oneInchData.tx.data],
-          protocol: "1Inch"
-        }
-        return(temp);
-      }
-    }else if(oneInchData.toAmount == null){
-      if(zeroExData.grossBuyAmount == null){
-        console.log("Error in fetching rates on both 0x and 1inch");
-        return null;
-      }else{
-        approvaldata=approveToken(sellTokenAddress,ZEROEX_ROUTER_ADDRESS,sellTokenAmount);
-        let temp = {
-          sellTokenAddress: zeroExData.sellTokenAddress,
-          buyTokenAddress: zeroExData.buyTokenAddress,
-          sellTokenAmount: zeroExData.grossBuyAmount,
-          calldata: [approvaldata,zeroExData.data],
-          protocol: "ZeroEx"
-        }
-        return(temp);
-      }
-    }else{
-      if(zeroExData.grossBuyAmount >= oneInchData.tx.toAmount){
-        approvaldata=approveToken(sellTokenAddress,ZEROEX_ROUTER_ADDRESS,sellTokenAmount);
-        let temp = {
-          sellTokenAddress: zeroExData.sellTokenAddress,
-          buyTokenAddress: zeroExData.buyTokenAddress,
-          sellTokenAmount: zeroExData.grossBuyAmount,
-          calldata:[approvaldata,zeroExData.data],
-          protocol: "ZeroEx"
-        }
-        return(temp);
-      }else{
-        let approvaldata=approveToken(sellTokenAddress,ONEINCH_ROUTER_ADDRESS,sellTokenAmount);
-        let temp = {
-          sellTokenAddress: oneInchData.tx.from,
-          buyTokenAddress: oneInchData.tx.to,
-          sellTokenAmount: oneInchData.toAmount,
-          calldata: [approvaldata,oneInchData.tx.data],
-          protocol: "1Inch"
-        }
-        return(temp);
-      }
-    }
+//     if(zeroExData.grossBuyAmount == null){
+//       if(oneInchData.toAmount == null){
+//         console.log("Error in fetching rates on both 0x and 1inch");
+//         return null;
+//       }else{
+//         let approvaldata=approveToken(sellTokenAddress,ONEINCH_ROUTER_ADDRESS,sellTokenAmount);
+//         let temp = {
+//           sellTokenAddress: oneInchData.tx.from,
+//           buyTokenAddress: oneInchData.tx.to,
+//           sellTokenAmount: oneInchData.toAmount,
+//           calldata: [approvaldata,oneInchData.tx.data],
+//           protocol: "1Inch"
+//         }
+//         return(temp);
+//       }
+//     }else if(oneInchData.toAmount == null){
+//       if(zeroExData.grossBuyAmount == null){
+//         console.log("Error in fetching rates on both 0x and 1inch");
+//         return null;
+//       }else{
+//         approvaldata=approveToken(sellTokenAddress,ZEROEX_ROUTER_ADDRESS,sellTokenAmount);
+//         let temp = {
+//           sellTokenAddress: zeroExData.sellTokenAddress,
+//           buyTokenAddress: zeroExData.buyTokenAddress,
+//           sellTokenAmount: zeroExData.grossBuyAmount,
+//           calldata: [approvaldata,zeroExData.data],
+//           protocol: "ZeroEx"
+//         }
+//         return(temp);
+//       }
+//     }else{
+//       if(zeroExData.grossBuyAmount >= oneInchData.tx.toAmount){
+//         approvaldata=approveToken(sellTokenAddress,ZEROEX_ROUTER_ADDRESS,sellTokenAmount);
+//         let temp = {
+//           sellTokenAddress: zeroExData.sellTokenAddress,
+//           buyTokenAddress: zeroExData.buyTokenAddress,
+//           sellTokenAmount: zeroExData.grossBuyAmount,
+//           calldata:[approvaldata,zeroExData.data],
+//           protocol: "ZeroEx"
+//         }
+//         return(temp);
+//       }else{
+//         let approvaldata=approveToken(sellTokenAddress,ONEINCH_ROUTER_ADDRESS,sellTokenAmount);
+//         let temp = {
+//           sellTokenAddress: oneInchData.tx.from,
+//           buyTokenAddress: oneInchData.tx.to,
+//           sellTokenAmount: oneInchData.toAmount,
+//           calldata: [approvaldata,oneInchData.tx.data],
+//           protocol: "1Inch"
+//         }
+//         return(temp);
+//       }
+//     }
+// }
+async function getSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount) {
+  const zeroExData = await getZeroExSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount);
+
+  if (zeroExData.grossBuyAmount == null) {
+    console.log("Error in fetching rates on ZeroEx");
+    return null;
+  } else {
+    // Corrected by adding 'await' to ensure 'approvaldata' resolves before proceeding
+    let approvaldata = await approveToken(sellTokenAddress, ZEROEX_ROUTER_ADDRESS, sellTokenAmount);
+
+
+    let temp = {
+      sellTokenAddress: zeroExData.sellTokenAddress,
+      buyTokenAddress: zeroExData.buyTokenAddress,
+      sellTokenAmount: zeroExData.grossBuyAmount,
+      calldata: [approvaldata, zeroExData.data], // 'approvaldata' should now be the resolved value
+      protocol: "ZeroEx"
+    };
+
+    return temp;
+  }
 }
+
+ 
 async function getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
   try{
     const params = {
