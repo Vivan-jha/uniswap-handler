@@ -16,6 +16,7 @@ const provider = new ethers.providers.JsonRpcProvider("https://binance.llamarpc.
 
 app.post("/bestRates", async (req, res) => {
   try {
+    console.log("CALLED POST REQUEST")
       const promises = req.body.sellTokenAddress.map((address, index) =>
           getSwapDataInternal(address, req.body.buyTokenAddress[index], req.body.sellTokenAmount[index])
       );
@@ -34,15 +35,13 @@ async function getSwapDataInternal(sellTokenAddress, buyTokenAddress, sellTokenA
       getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount)
     ]);
 
-    console.log("ZeroEx Data:", zeroExData);
-    console.log("1Inch Data:", oneInchData);
-
-    const prepareResponse = (data, protocol, routerAddress) => ({
+    const prepareResponse = async (data, protocol, routerAddress) => ({
       sellTokenAddress: data.sellTokenAddress || data.tx.from,
       sellTokenAmount: sellTokenAmount,
       buyTokenAddress: data.buyTokenAddress || data.tx.to,
       buyTokenAmount: data.grossBuyAmount || data.toAmount,
-      calldata: [approveToken(sellTokenAddress, routerAddress, sellTokenAmount), data.data || data.tx.data],
+      calldata: [await approveToken(sellTokenAddress, routerAddress, sellTokenAmount), data.data || data.tx.data],
+      to: [sellTokenAddress,routerAddress],
       gas: data.estimatedGas || data.tx.gas,
       protocol
     });
@@ -86,7 +85,7 @@ async function getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmoun
 
 async function getOneInchSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
   try{
-    await delay(1000);
+    await delay(100);
     const params = {
       src: sellTokenAddress,
       dst: buyTokenAddress,
