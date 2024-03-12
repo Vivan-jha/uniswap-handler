@@ -17,9 +17,10 @@ const provider = new ethers.providers.JsonRpcProvider("https://binance.llamarpc.
 app.post("/bestRates", async (req, res) => {
   try {
     console.log("CALLED POST REQUEST")
+    const fees = 0.6 / req.body.sellTokenAddress.length
       const promises = req.body.sellTokenAddress.map((address, index) =>
-          getSwapDataInternal(address, req.body.buyTokenAddress[index], req.body.sellTokenAmount[index])
-      );
+          getSwapDataInternal(address, req.body.buyTokenAddress[index], req.body.sellTokenAmount[index],getZeroExPriceData(address, req.body.sellTokenAmount[index],fees))
+  );
       const results = await Promise.all(promises);
       res.json(results.filter(result => result !== null)); // Filter out any null results
   } catch (error) {
@@ -28,11 +29,11 @@ app.post("/bestRates", async (req, res) => {
   }
 });
 
-async function getSwapDataInternal(sellTokenAddress, buyTokenAddress, sellTokenAmount) {
+async function getSwapDataInternal(sellTokenAddress, buyTokenAddress, sellTokenAmount,fee) {
   try {
     const [zeroExData, oneInchData] = await Promise.all([
-      getZeroExSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount),
-      getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount)
+      getZeroExSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount,fee),
+      // getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount)
     ]);
 
     const prepareResponse = async (data, protocol, routerAddress) => ({
@@ -46,9 +47,9 @@ async function getSwapDataInternal(sellTokenAddress, buyTokenAddress, sellTokenA
       protocol
     });
 
-    if (zeroExData.grossBuyAmount && (!oneInchData.toAmount || zeroExData.grossBuyAmount >= oneInchData.toAmount)) {
+    if (zeroExData.grossBuyAmount && (!oneInchData?.toAmount || zeroExData.grossBuyAmount >= oneInchData?.toAmount)) {
       return prepareResponse(zeroExData, "ZeroEx", ZEROEX_ROUTER_ADDRESS);
-    } else if (oneInchData.toAmount) {
+    } else if (oneInchData?.toAmount) {
       return prepareResponse(oneInchData, "1Inch", ONEINCH_ROUTER_ADDRESS);
     } else {
       console.log("Error in fetching rates from both 0x and 1inch.");
@@ -121,7 +122,28 @@ async function approveToken(contractAddress, spender, amount) {
 function delay(ms) {
   return new Promise( resolve => setTimeout(resolve, ms) );
 }
-
+async function getZeroExPriceData(sellTokenAddress, sellTokenAmount,feesTobeCharged) {
+  try {
+    const sellTokenPriceResponse = await axios.get(`https://bsc.api.0x.org/swap/v1/price?${qs.stringify({
+      sellToken: sellTokenAddress,
+      buyToken: "0x55d398326f99059fF775485246999027B3197955",
+      sellAmount: sellTokenAmount
+    })}`, {
+      headers: { '0x-api-key': process.env.ZEROEX_API_KEY },
+    });
+    const tokenContract = new ethers.Contract(sellTokenAddress, erc20abi.abi, provider);
+    const decimals = await tokenContract.callStatic.decimals();
+    const sellTokenPriceInUSD = sellTokenPriceResponse.data.price;
+    const feeInUSD = feesTobeCharged;
+    const sellTokenAmountBN = ethers.BigNumber.from(sellTokenAmount).mul((10**18).toString()).div((10**Number(decimals)).toString());
+    const sellTokenAmountUSD = Number((ethers.utils.formatEther(sellTokenAmountBN)))*(Number(sellTokenPriceInUSD))
+    const feeInSellTokenPercentage = (feeInUSD / sellTokenAmountUSD);
+    return feeInSellTokenPercentage;
+  } catch (e) {
+    console.log("0x Price Error", e);
+    throw e; 
+  }
+}
 var server = app.listen(3000, function () {
     var host = server.address().address;
     var port = server.address().port;
