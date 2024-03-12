@@ -17,7 +17,7 @@ const provider = new ethers.providers.JsonRpcProvider("https://binance.llamarpc.
 app.post("/bestRates", async (req, res) => {
   try {
     console.log("CALLED POST REQUEST")
-    const fees = 0.6 / req.body.sellTokenAddress.length
+    const fees =  req.body.feeToCharge / req.body.sellTokenAddress.length
       const promises = req.body.sellTokenAddress.map((address, index) =>
           getSwapDataInternal(address, req.body.buyTokenAddress[index], req.body.sellTokenAmount[index],getZeroExPriceData(address, req.body.sellTokenAmount[index],fees))
   );
@@ -61,14 +61,17 @@ async function getSwapDataInternal(sellTokenAddress, buyTokenAddress, sellTokenA
   }
 }
 
-async function getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount){
+async function getZeroExSwapData(sellTokenAddress,buyTokenAddress,sellTokenAmount,fee){
   try{
     const params = {
         sellToken: sellTokenAddress,
         buyToken: buyTokenAddress,
         sellAmount: sellTokenAmount,
         slippagePercentage: 0.01,
-        skipValidation: true
+        skipValidation: true,
+        feeRecipient: "0x2F31eAba480d133d3cC7326584B0C40eFacecaDB",
+        buyTokenPercentageFee:fee,
+        feeRecipientTradeSurplus: "0x2F31eAba480d133d3cC7326584B0C40eFacecaDB" 
       }
       const response = await axios.get(
         `https://bsc.api.0x.org/swap/v1/quote?${qs.stringify(params)}`,
