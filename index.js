@@ -59,7 +59,7 @@ async function getSwapDataInternal(
       sellTokenAddress: data.sellTokenAddress || data.tx.from,
       sellTokenAmount: sellTokenAmount,
       buyTokenAddress: data.buyTokenAddress || data.tx.to,
-      buyTokenAmount: data.grossBuyAmount || data.toAmount,
+      buyTokenAmount: data.buyAmount || data.toAmount,
       calldata: [
         await approveToken(sellTokenAddress, routerAddress, sellTokenAmount),
         data.data || data.tx.data,
@@ -70,9 +70,9 @@ async function getSwapDataInternal(
     });
 
     if (
-      zeroExData.grossBuyAmount &&
+      zeroExData.buyAmount &&
       (!oneInchData?.toAmount ||
-        zeroExData.grossBuyAmount >= oneInchData?.toAmount)
+        zeroExData.buyAmount >= oneInchData?.toAmount)
     ) {
       return prepareResponse(zeroExData, "ZeroEx", ZEROEX_ROUTER_ADDRESS);
     } else if (oneInchData?.toAmount) {
@@ -104,6 +104,7 @@ async function getZeroExSwapData(
       buyTokenPercentageFee: fee,
       feeRecipientTradeSurplus: "0x2F31eAba480d133d3cC7326584B0C40eFacecaDB",
     };
+    console.log(fee)
     const response = await axios.get(
       `https://bsc.api.0x.org/swap/v1/quote?${qs.stringify(params)}`,
       {
@@ -112,6 +113,7 @@ async function getZeroExSwapData(
         },
       }
     );
+    console.log(response.data)
     return response.data;
   } catch (e) {
     console.log("0x Error", e);
@@ -208,7 +210,7 @@ async function getZeroExPriceData(
     // const length = record.length;
     // const sellTokenPriceInUSD = record[length-1].c;
     const sellTokenPriceInUSD = sellTokenPriceResponse.data.price;
-    console.log(sellTokenPriceInUSD);
+    // console.log(sellTokenPriceInUSD);
     // const decimals = await
     const sellTokenAmountBN = ethers.utils.parseUnits(
       sellTokenAmount.toString(),
