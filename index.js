@@ -59,7 +59,7 @@ async function getSwapDataInternal(
       sellTokenAddress: data.sellTokenAddress || data.tx.from,
       sellTokenAmount: sellTokenAmount,
       buyTokenAddress: data.buyTokenAddress || data.tx.to,
-      buyTokenAmount: data.buyAmount || data.toAmount,
+      buyTokenAmount: data.grossBuyAmount || data.toAmount,
       calldata: [
         await approveToken(sellTokenAddress, routerAddress, sellTokenAmount),
         data.data || data.tx.data,
@@ -70,9 +70,9 @@ async function getSwapDataInternal(
     });
 
     if (
-      zeroExData.buyAmount &&
+      zeroExData.grossBuyAmount &&
       (!oneInchData?.toAmount ||
-        zeroExData.buyAmount >= oneInchData?.toAmount)
+        zeroExData.grossBuyAmount >= oneInchData?.toAmount)
     ) {
       return prepareResponse(zeroExData, "ZeroEx", ZEROEX_ROUTER_ADDRESS);
     } else if (oneInchData?.toAmount) {
