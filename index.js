@@ -52,7 +52,7 @@ async function getSwapDataInternal(
     );
     const [zeroExData, oneInchData] = await Promise.all([
       getZeroExSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount, fees),
-      // getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount)
+      getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount,fees) // Uncommented and activated
     ]);
 
     const prepareResponse = async (data, protocol, routerAddress) => ({
@@ -68,7 +68,6 @@ async function getSwapDataInternal(
       gas: data.estimatedGas || data.tx.gas,
       protocol,
     });
-
     if (
       zeroExData.grossBuyAmount &&
       (!oneInchData?.toAmount ||
@@ -87,6 +86,8 @@ async function getSwapDataInternal(
   }
 }
 
+
+
 async function getZeroExSwapData(
   sellTokenAddress,
   buyTokenAddress,
@@ -100,9 +101,9 @@ async function getZeroExSwapData(
       sellAmount: sellTokenAmount,
       slippagePercentage: 0.01,
       skipValidation: true,
-      feeRecipient: "0x2F31eAba480d133d3cC7326584B0C40eFacecaDB",
-      buyTokenPercentageFee: fee,
-      feeRecipientTradeSurplus: "0x2F31eAba480d133d3cC7326584B0C40eFacecaDB",
+      // feeRecipient: "0x2F31eAba480d133d3cC7326584B0C40eFacecaDB",
+      // buyTokenPercentageFee: fee,
+      // feeRecipientTradeSurplus: "0x2F31eAba480d133d3cC7326584B0C40eFacecaDB",
     };
     console.log(fee)
     const response = await axios.get(
@@ -120,13 +121,9 @@ async function getZeroExSwapData(
   }
 }
 
-async function getOneInchSwapData(
-  sellTokenAddress,
-  buyTokenAddress,
-  sellTokenAmount
-) {
+async function getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount, fee, retryCount = 0) {
   try {
-    await delay(100);
+    await delay(100); 
     const params = {
       src: sellTokenAddress,
       dst: buyTokenAddress,
@@ -146,9 +143,18 @@ async function getOneInchSwapData(
     );
     return response.data;
   } catch (e) {
-    console.log("0x Error", e);
+    console.log("1inch Error", e.response ? e.response.data : e.message);
+    if (e.response && e.response.status === 429 && retryCount < 5) { 
+      const waitTime = Math.pow(2, retryCount) * 1000; 
+      console.log(`Waiting ${waitTime} ms before retrying...`);
+      await delay(waitTime);
+      return getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount, fee, retryCount + 1); 
+    } else {
+      throw e; 
+    }
   }
 }
+
 async function approveToken(contractAddress, spender, amount) {
   try {
     const tokenContract = new ethers.Contract(
