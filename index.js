@@ -35,7 +35,9 @@ app.post("/bestRates", async (req, res) => {
       )
     );
     const results = await Promise.all(promises);
-    res.json(results.filter((result) => result !== null)); 
+
+    console.log("Results: ", results);
+    res.json(results.filter((result) => result !== null)); // Filter out any null results
   } catch (error) {
     console.error(error);
     res.status(500).send("Error fetching swap data");
