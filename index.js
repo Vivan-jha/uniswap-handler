@@ -16,6 +16,7 @@ const PARASWAP_TOKEN_TRANSFER_PROXY="0x216b4b4ba9f3e719726886d34a177484278bfcae"
 const BEBOP_ADDRESS = "0xbEbEbEb035351f58602E0C1C8B59ECBfF5d5f47b";
 const CHAIN_ID = 56;
 
+
 const provider = new ethers.providers.JsonRpcProvider(
   process.env.RPC_URL,
   { name: "bsc", chainId: CHAIN_ID }
@@ -89,10 +90,12 @@ async function getSwapDataInternal(
   fee
 ) {
   try {
+
     const [zeroExData, oneInchData, paraSwapResponse] = await Promise.all([
       getZeroExSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount),
       getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount),
       getParaSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount) 
+
     ]);
     const zeroExAmount = parseFloat(zeroExData.grossBuyAmount) || 0;
     const oneInchAmount = parseFloat(oneInchData.dstAmount) || 0;
@@ -134,6 +137,7 @@ async function getSwapDataInternal(
     }
     console.log("Response Data : ", responseData);
     return responseData;
+
   } catch (error) {
     console.error("Error in fetching swap data:", error);
     return null;
@@ -170,7 +174,9 @@ async function getZeroExSwapData(
   }
 }
 
+
 async function getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount, retryCount = 0) {
+
   try {
     await delay(100); 
     const params = {
@@ -192,14 +198,15 @@ async function getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAm
     );
     return response.data;
   } catch (e) {
-    console.log("1inch Error", e.message);
-    if (e.response && e.response.status === 429 && retryCount < 5) { 
-      const waitTime = Math.pow(2, retryCount) * 1000; 
+
+    console.log("1inch Error", e.response ? e.response.data : e.message);
+    if (e.response && e.response.status === 429 && retryCount < 5) {
+      const waitTime = Math.pow(2, retryCount) * 1000;
       console.log(`Waiting ${waitTime} ms before retrying...`);
       await delay(waitTime);
-      return getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount, retryCount + 1); 
+      return getOneInchSwapData(sellTokenAddress, buyTokenAddress, sellTokenAmount, fee, retryCount + 1);
     } else {
-      throw e; 
+      throw e;
     }
   }
 }
@@ -312,16 +319,67 @@ function delay(ms) {
 }
 const tokenDecimalsCache = {};
 async function getTokenDecimals(tokenAddress, provider) {
-  if (!tokenDecimalsCache[tokenAddress]) {
-    const tokenContract = new ethers.Contract(
-      tokenAddress,
-      erc20abi.abi,
-      provider
-    );
-    const decimals = await tokenContract.callStatic.decimals();
-    tokenDecimalsCache[tokenAddress] = decimals; // Cache the decimals
+
+  if (!tokenAddress || !provider) {
+    throw new Error('Token address or provider is null or undefined.');
   }
+  tokenDecimalsCache[tokenAddress] = tokenDecimalsCache[tokenAddress] || (async () => {
+    const tokenContract = new ethers.Contract(tokenAddress, erc20abi.abi, provider);
+    return tokenContract.callStatic.decimals();
+  })();
+
   return tokenDecimalsCache[tokenAddress];
+}
+
+
+async function getZeroExPriceData(sellTokenAddress, sellTokenAmount, feePercentage) {
+  const buyTokenAddress = "0x55d398326f99059fF775485246999027B3197955"; // Tether (USDT) address on BSC
+  const apiUrl = `https://bsc.api.0x.org/swap/v1/price?${qs.stringify({
+    sellToken: sellTokenAddress,
+    buyToken: buyTokenAddress,
+    sellAmount: sellTokenAmount,
+  })}`;
+
+  try {
+    const [{ data: priceData }, tokenDecimals] = await Promise.all([
+      axios.get(apiUrl, { headers: { "0x-api-key": process.env.ZEROEX_API_KEY } }),
+      getTokenDecimals(sellTokenAddress, provider),
+    ]);
+
+    const price = priceData.price;
+    const sellAmountBN = ethers.utils.parseUnits(sellTokenAmount.toString(), tokenDecimals);
+    const sellAmountInUSD = sellAmountBN.mul(ethers.utils.parseUnits(price.toString(), 18)).div(ethers.utils.parseUnits("1", 18 + tokenDecimals));
+    const feeInSellToken = calculateFee(sellAmountInUSD, feePercentage, tokenDecimals);
+
+    return feeInSellToken;
+  } catch (error) {
+    console.error("Error fetching 0x price data:", error);
+    throw new Error("Failed to fetch price data.");
+  }
+}
+
+async function getParaSwapPriceData(sellTokenAddress, buyTokenAddress, sellTokenAmount) {
+  try {
+    const params = {
+      srcToken: sellTokenAddress,
+      destToken: buyTokenAddress,
+      amount: sellTokenAmount,
+      side: 'SELL',
+      network: 56,
+    }
+    const response = await axios.get(`https://apiv5.paraswap.io/prices/?${qs.stringify(params)}`)
+
+    // console.log("Our Response data for paraswap ", response.data)
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching Paraswap price data:", error);
+    return null;
+  }
+}
+
+function calculateFee(amountInUSD, feePercentage, decimals) {
+  const fee = feePercentage / parseFloat(ethers.utils.formatUnits(amountInUSD, decimals));
+  return fee;
 }
 
 var server = app.listen(3000, function () {
