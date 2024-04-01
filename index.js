@@ -13,7 +13,7 @@ const priceOracleAbi = require("./abi/Oracle.json");
 const ZEROEX_ROUTER_ADDRESS = "0xDef1C0ded9bec7F1a1670819833240f027b25EfF";
 const ONEINCH_ROUTER_ADDRESS = "0x111111125421cA6dc452d289314280a0f8842A65";
 const PARASWAP_ROUTER_ADDRESS="0xDEF171Fe48CF0115B1d80b88dc8eAB59176FEe57";
-
+const PARASWAP_TOKEN_TRANSFER_PROXY="0x216b4b4ba9f3e719726886d34a177484278bfcae";
 const provider = new ethers.providers.JsonRpcProvider(
   process.env.RPC_URL,
   { name: "bsc", chainId: 56 }
@@ -69,17 +69,17 @@ async function getSwapDataInternal(
       // Print prepared data for each protocol
       console.log("paraswap response",paraSwapResponse);
 
-    const prepareResponseforParaswap = async (data, protocol, routerAddress) => {
+    const prepareResponseforParaswap = async (data, protocol, routerAddress,tokenRouter) => {
       return {
         sellTokenAddress:data.priceRoute.srcToken,
         sellTokenAmount: data.priceRoute.srcAmount,
         buyTokenAddress: data.priceRoute.destToken,
         buyTokenAmount:data.priceRoute.destAmount,
         calldata: [
-          await approveToken(sellTokenAddress, routerAddress, sellTokenAmount),
+          await approveToken(sellTokenAddress,tokenRouter,sellTokenAmount),
           data.transactionData.data,
         ],
-        to: [routerAddress],
+        to: [sellTokenAddress,routerAddress],
         gas: data.transactionData.gas,
         protocol,
       };
@@ -132,7 +132,7 @@ async function getSwapDataInternal(
     // } else { // This assumes ParaSwap has the least favorable rate or they are all zero
     //   responseData = await prepareResponse(zeroExData, "ZeroEx", ZEROEX_ROUTER_ADDRESS);
     // }
-    responseData = await prepareResponseforParaswap(paraSwapResponse, "ParaSwap", PARASWAP_ROUTER_ADDRESS);
+    responseData = await prepareResponseforParaswap(paraSwapResponse, "ParaSwap", PARASWAP_ROUTER_ADDRESS,PARASWAP_TOKEN_TRANSFER_PROXY);
     console.log("Most favorable rate:", responseData);
     return responseData;
   } catch (error) {
