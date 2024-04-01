@@ -70,6 +70,7 @@ async function getSwapDataInternal(
       console.log("paraswap response",paraSwapResponse);
 
     const prepareResponseforParaswap = async (data, protocol, routerAddress,tokenRouter) => {
+      console.log("data",data);
       return {
         sellTokenAddress:data.priceRoute.srcToken,
         sellTokenAmount: data.priceRoute.srcAmount,
@@ -99,9 +100,9 @@ async function getSwapDataInternal(
     });
 
     const prepareResponsefor1inch = async (data , protocol , routerAddress) => ({
-            sellTokenAddress : data.tx.from,
+            sellTokenAddress : "0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c",
             sellTokenAmount : sellTokenAmount,
-            buyTokenAddress : data.tx.to,
+            buyTokenAddress : "0x7130d2a12b9bcbfae4f2634d864a1ee1ce3ead9c",
             buyTokenAmount : data.dstAmount,
             calldata : [
                 await approveToken(sellTokenAddress, routerAddress, sellTokenAmount),
@@ -124,15 +125,15 @@ async function getSwapDataInternal(
     let minAmount = Math.min(zeroExAmount, oneInchAmount, paraSwapAmount);
     let responseData;
 
-    // Compare and select the service with the least favorable rate
-    // if (minAmount === paraSwapAmount) {
-    //   responseData = await prepareResponseforParaswap(paraSwapResponse.priceRoute, "ParaSwap", PARASWAP_ROUTER_ADDRESS);
-    // } else if (minAmount === oneInchAmount) {
-    //   responseData = await prepareResponsefor1inch(oneInchData, "1Inch", ONEINCH_ROUTER_ADDRESS);
-    // } else { // This assumes ParaSwap has the least favorable rate or they are all zero
-    //   responseData = await prepareResponse(zeroExData, "ZeroEx", ZEROEX_ROUTER_ADDRESS);
-    // }
-    responseData = await prepareResponseforParaswap(paraSwapResponse, "ParaSwap", PARASWAP_ROUTER_ADDRESS,PARASWAP_TOKEN_TRANSFER_PROXY);
+   
+    if (minAmount === paraSwapAmount) {
+      responseData = await prepareResponseforParaswap(paraSwapResponse.priceRoute, "ParaSwap", PARASWAP_ROUTER_ADDRESS,PARASWAP_TOKEN_TRANSFER_PROXY);
+    } else if (minAmount === oneInchAmount) {
+      responseData = await prepareResponsefor1inch(oneInchData, "1Inch", ONEINCH_ROUTER_ADDRESS);
+    } else { // This assumes ParaSwap has the least favorable rate or they are all zero
+      responseData = await prepareResponse(zeroExData, "ZeroEx", ZEROEX_ROUTER_ADDRESS);
+    }
+    console.log(paraSwapResponse);
     console.log("Most favorable rate:", responseData);
     return responseData;
   } catch (error) {
