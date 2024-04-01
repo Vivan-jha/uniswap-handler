@@ -122,12 +122,12 @@ async function getSwapDataInternal(
     console.log("ParaSwap amount:", paraSwapAmount);
 
     // Initialize variables to store the minimum amount and its corresponding data
-    let minAmount = Math.min(zeroExAmount, oneInchAmount, paraSwapAmount);
+    let minAmount = Math.max(zeroExAmount, oneInchAmount, paraSwapAmount);
     let responseData;
 
    
     if (minAmount === paraSwapAmount) {
-      responseData = await prepareResponseforParaswap(paraSwapResponse.priceRoute, "ParaSwap", PARASWAP_ROUTER_ADDRESS,PARASWAP_TOKEN_TRANSFER_PROXY);
+      responseData = await prepareResponseforParaswap(paraSwapResponse, "ParaSwap", PARASWAP_ROUTER_ADDRESS,PARASWAP_TOKEN_TRANSFER_PROXY);
     } else if (minAmount === oneInchAmount) {
       responseData = await prepareResponsefor1inch(oneInchData, "1Inch", ONEINCH_ROUTER_ADDRESS);
     } else { // This assumes ParaSwap has the least favorable rate or they are all zero
