@@ -1,12 +1,14 @@
 - [VC - Central Server](#vc---central-server)
-- [CONTRIBUTION](#contribution)
-  - [Guidelines for forking, developing and opening a PR](#guidelines-for-forking-developing-and-opening-a-pr)
+  - [CONTRIBUTION](#contribution)
+    - [Guidelines](#guidelines)
 
 # VC - Central Server
 
-# CONTRIBUTION
+## CONTRIBUTION
 
-## Guidelines for forking, developing and opening a PR
+### Guidelines
+
+..for forking, developing and opening a PR:
 
 1. This repo https://github.com/Velvet-Capital/velvet-central-server at this point will only contain 2 branches - `main` and `dev`. 
 2. All feature additions go into `dev` branch and get merged into `main` once tested thorougly.
