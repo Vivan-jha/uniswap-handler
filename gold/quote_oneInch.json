@@ -10,9 +10,5 @@
   }
 }
 
-curl -X GET \
-      "https://api.1inch.dev/swap/v6.0/56/swap?src=0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c&dst=0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c&amount=10000000000000000&from=0xbEbEbEb035351f58602E0C1C8B59ECBfF5d5f47b&slippage=1&includeGas=true&disableEstimate=true" \
-      -H "Authorization: Bearer LWmCVjo3RIkn6VSzVsW50LkKL33EckqD" \
-      -H "accept: application/json" \
-      -H "content-type: application/json" \
+
       
