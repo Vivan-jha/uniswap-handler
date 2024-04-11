@@ -9,11 +9,13 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@uniswap/sdk-core": "3.1.0",
+    "@uniswap/v3-sdk": "3.9.0",
     "axios": "^1.6.1",
+    "big-number": "^2.0.0",
     "dotenv": "^16.3.1",
     "ethers": "5.4",
     "express": "^4.19.2",
-    "big-number": "^2.0.0",
     "node-cache": "^5.1.2",
     "qs": "^6.11.2",
     "xmlhttprequest": "^1.8.0"
