@@ -6,9 +6,9 @@ const QUOTER_CONTRACT_ADDRESS = '0x61fFE014bA17989E743c5F6cB21bF9697530B21e';
 const SWAP_ROUTER_ADDRESS = '0xE592427A0AEce92De3Edee1F18E0157C05861564';
 const WETH_CONTRACT_ADDRESS = '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2';
 
-// Currencies and Tokens
+
 const WETH_TOKEN = new Token(
-  1, // Assuming MAINNET is represented by the chain ID 1
+  1, 
   '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
   18,
   'WETH',
@@ -16,7 +16,7 @@ const WETH_TOKEN = new Token(
 );
 
 const USDC_TOKEN = new Token(
-  1, // Assuming MAINNET is represented by the chain ID 1
+  1, 
   '0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48',
   6,
   'USDC',
@@ -56,3 +56,5 @@ module.exports = {
   MAX_PRIORITY_FEE_PER_GAS,
   TOKEN_AMOUNT_TO_APPROVE_FOR_TRANSFER
 };
+
+

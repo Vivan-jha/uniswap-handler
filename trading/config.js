@@ -14,11 +14,11 @@ const Environment = {
 const CurrentConfig = {
   env: Environment.LOCAL, // Assigning directly from the Environment object
   rpc: {
-    mainnet: 'https://eth-mainnet.g.alchemy.com/v2/uQMzFFe-s-LHk8kRSgBJ4-FCbr7o7DNm',
+    mainnet: 'http://127.0.0.1:8545/',
   },
   wallet: {
-    address: '',
-    privateKey: '',
+    address: '0x8626f6940E2eb28930eFb4CeF49B2d1F2C9C1199',
+    privateKey: '0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e',
   },
   tokens: {
     in: WETH_TOKEN,

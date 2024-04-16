@@ -3,9 +3,14 @@ const { CurrentConfig, Environment } = require('./config');
 
 // Single copies of provider and wallet
 console.log("RPC URL:", CurrentConfig.rpc.mainnet);
-const mainnetProvider = new ethers.providers.JsonRpcProvider(CurrentConfig.rpc.mainnet, { name: 'mainnet', chainId: 1 });
+const mainnetProvider= new ethers.providers.JsonRpcProvider("http://127.0.0.1:8545/", {
+  name: "mainnet",
+  chainId: 1,
+});
+
 console.log("Provider initialized:", mainnetProvider);
 const wallet = createWallet();
+
 // Example static call to fetch the current block number
 mainnetProvider.getBlockNumber().then((blockNumber) => console.log("Current Block Number:", blockNumber)).catch((error) => console.error(error));
 
@@ -45,14 +50,15 @@ function getWalletAddress() {
 }
 
 async function sendTransaction(transaction) {
-  if (CurrentConfig.env === Environment.WALLET_EXTENSION) {
-    return sendTransactionViaExtension(transaction);
-  } else {
-    if (transaction.value) {
-      transaction.value = ethers.BigNumber.from(transaction.value);
-    }
-    return sendTransactionViaWallet(transaction);
-  }
+  // if (CurrentConfig.env === Environment.WALLET_EXTENSION) {
+  //   return sendTransactionViaExtension(transaction);
+  // } else {
+  //   if (transaction.value) {
+  //     transaction.value = ethers.BigNumber.from(transaction.value);
+  //   }
+  //   return sendTransactionViaWallet(transaction);
+  // }
+  return sendTransactionViaWallet(transaction);
 }
 
 async function connectBrowserExtensionWallet() {
@@ -76,9 +82,9 @@ async function connectBrowserExtensionWallet() {
 
 function createWallet() {
   let provider = mainnetProvider;
-  if (CurrentConfig.env === Environment.LOCAL) {
-    provider = new ethers.providers.JsonRpcProvider(CurrentConfig.rpc.local);
-  }
+  // if (CurrentConfig.env === Environment.LOCAL) {
+  //   provider = new ethers.providers.JsonRpcProvider(CurrentConfig.rpc.local);
+  // }
   return new ethers.Wallet(CurrentConfig.wallet.privateKey, provider);
 }
 
@@ -103,10 +109,17 @@ async function sendTransactionViaExtension(transaction) {
 }
 
 async function sendTransactionViaWallet(transaction) {
+  console.log("transaction",transaction);
   if (transaction.value) {
     transaction.value = ethers.BigNumber.from(transaction.value);
   }
+  // const estimatedGasLimit = await wallet.estimateGas(transaction);
+  // console.log("Estimated Gas Limit:", estimatedGasLimit.toString());
+
+  transaction.gasLimit = 3000000;
+
   const txRes = await wallet.sendTransaction(transaction);
+  console.log("txres",txRes);
   
   let receipt = null;
   const provider = getProvider();
@@ -125,6 +138,7 @@ async function sendTransactionViaWallet(transaction) {
       break;
     }
   }
+  console.log("receipt",receipt);
   
   return receipt ? TransactionState.Sent : TransactionState.Failed;
 }

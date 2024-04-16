@@ -79,7 +79,7 @@ async function executeTrade(trade) {
   if (tokenApproval !== TransactionState.Sent) {
     return TransactionState.Failed;
   }
-
+  console.log("token transfer approval",tokenApproval);
   const options = {
     slippageTolerance: new Percent(50, 10_000),
     deadline: Math.floor(Date.now() / 1000) + 60 * 20,
@@ -87,6 +87,7 @@ async function executeTrade(trade) {
   };
 
   const methodParameters = SwapRouter.swapCallParameters([trade], options);
+  console.log("method para",methodParameters);
 
   const tx = {
     data: methodParameters.calldata,
@@ -137,6 +138,7 @@ async function getOutputQuote(route) {
 async function getTokenTransferApproval(token) {
   const provider = getProvider();
   const address = getWalletAddress();
+  console.log("wallet address",address);
   if (!provider || !address) {
     console.log('No Provider Found');
     return TransactionState.Failed;
@@ -155,7 +157,9 @@ async function getTokenTransferApproval(token) {
         TOKEN_AMOUNT_TO_APPROVE_FOR_TRANSFER,
         token.decimals
       ).toString()
-    );
+    );  
+
+    console.log("approval transaction",transaction);
 
     return await sendTransaction({
       ...transaction,
@@ -180,6 +184,21 @@ module.exports = {
 (async () => {
   console.log('Starting trading script...');
 
+  // Debugging network connection
+  const provider = getProvider();
+  try {
+    const network = await provider.getNetwork();
+    console.log(`Connected to network: ${network.name} (chainId: ${network.chainId})`);
+
+    const blockNumber = await provider.getBlockNumber();
+    console.log(`Current Block Number: ${blockNumber}`);
+  } catch (error) {
+    console.error('Network connection error:', error);
+    // Return or throw an error to stop execution if the network connection fails
+    return;
+  }
+
+  // Continue with the existing logic
   try {
     console.log('Creating trade...');
     const trade = await createTrade();
@@ -197,8 +216,6 @@ module.exports = {
         console.log('  Route information is unavailable');
       }
     });
-    
-
 
     console.log('Executing trade...');
     const result = await executeTrade(trade);
