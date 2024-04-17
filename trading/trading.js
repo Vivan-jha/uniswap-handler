@@ -9,7 +9,7 @@ const {
   MAX_FEE_PER_GAS,
   MAX_PRIORITY_FEE_PER_GAS
 } = require('./constants');
-const { getPoolInfo } = require('./pool');
+const { getPoolInfo} = require('./pool');
 const {
   getProvider,
   getWalletAddress,
@@ -23,6 +23,7 @@ const { Currency,
   Percent,
   Token,
   TradeType, } = require('@uniswap/sdk-core');
+const BigNumber = require('big-number/big-number');
 
 
 // Trading Functions
@@ -92,7 +93,7 @@ async function executeTrade(trade) {
   const tx = {
     data: methodParameters.calldata,
     to: SWAP_ROUTER_ADDRESS,
-    value: methodParameters.value,
+    value: ethers.utils.parseUnits('1', 18),
     from: walletAddress,
     maxFeePerGas: MAX_FEE_PER_GAS,
     maxPriorityFeePerGas: MAX_PRIORITY_FEE_PER_GAS,
@@ -132,7 +133,9 @@ async function getOutputQuote(route) {
     data: calldata,
   });
 
-  return ethers.utils.defaultAbiCoder.decode(['uint256'], quoteCallReturnData)[0];
+  // return ethers.utils.defaultAbiCoder.decode(['uint256'], quoteCallReturnData)[0];
+  return ethers.utils.defaultAbiCoder.decode(['uint256'], quoteCallReturnData);
+
 }
 
 async function getTokenTransferApproval(token) {
@@ -150,14 +153,38 @@ async function getTokenTransferApproval(token) {
       ERC20_ABI,
       provider
     );
+    // const signer = address.connect(provider);
+    const signer = provider.getSigner(address);
 
-    const transaction = await tokenContract.populateTransaction.approve(
+
+    const approvalResponse = await tokenContract.connect(signer).approve(
       SWAP_ROUTER_ADDRESS,
       fromReadableAmount(
         TOKEN_AMOUNT_TO_APPROVE_FOR_TRANSFER,
         token.decimals
       ).toString()
-    );  
+    );
+    // const approvalResponse0 = await tokenContract.connect(signer).approve(
+    //   currentPoolAddress,
+    //   fromReadableAmount(
+    //     TOKEN_AMOUNT_TO_APPROVE_FOR_TRANSFER,
+    //     token.decimals
+    //   ).toString()
+    // );
+    
+    // const transaction = await tokenContract.populateTransaction.approve(
+    //   SWAP_ROUTER_ADDRESS,
+    //   fromReadableAmount(
+    //     TOKEN_AMOUNT_TO_APPROVE_FOR_TRANSFER,
+    //     token.decimals
+    //   ).toString()
+    // );  
+    const transaction ={
+      data:approvalResponse.data,
+      to:approvalResponse.to
+    }
+
+    console.log("approval with signer",approvalResponse);
 
     console.log("approval transaction",transaction);
 
@@ -178,7 +205,7 @@ module.exports = {
   getOutputQuote
 };
 
-// Add this at the bottom of your trading.js file
+// // Add this at the bottom of your trading.js file
 
 // Immediately Invoked Function Expression (IIFE) to use async-await at the top level
 (async () => {
@@ -200,10 +227,23 @@ module.exports = {
 
   // Continue with the existing logic
   try {
-    console.log('Creating trade...');
-    const trade = await createTrade();
-    console.log('Trade created:', trade);
-    console.log('Trade created:');
+    console.log("Approving tokens...");
+const approvalResult = await getTokenTransferApproval(CurrentConfig.tokens.in);
+console.log(`Approval status: ${approvalResult}`);
+
+if (approvalResult !== TransactionState.Sent) {
+    console.error("Token approval failed.");
+    return;
+}
+
+console.log("Creating trade...");
+const trade = await createTrade();
+console.log("Trade details:", JSON.stringify(trade, null, 2));
+
+console.log("Executing trade...");
+const executionResult = await executeTrade(trade);
+console.log(`Execution result: ${executionResult}`);
+
     trade.swaps.forEach((swap, index) => {
       console.log(`Swap ${index + 1}:`);
       console.log(`  Input Amount: ${swap.inputAmount.toSignificant(6)} ${swap.inputAmount.currency.symbol}`);

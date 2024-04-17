@@ -18,7 +18,7 @@ async function getPoolInfo() {
     tokenB: CurrentConfig.tokens.out,
     fee: CurrentConfig.tokens.poolFee,
   });
-
+  console.log("pool address",currentPoolAddress);
   const poolContract = new ethers.Contract(
     currentPoolAddress,
     IUniswapV3PoolABI.abi,
@@ -42,6 +42,7 @@ async function getPoolInfo() {
     liquidity,
     sqrtPriceX96: slot0[0],
     tick: slot0[1],
+
   };
 }
 
